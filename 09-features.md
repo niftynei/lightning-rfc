@@ -38,6 +38,7 @@ The Context column decodes as follows:
 | 14/15 | `payment_secret`                 | Node supports `payment_secret` field                      | IN9      | `var_onion_optin` | [Routing Onion Specification][bolt04] |
 | 16/17 | `basic_mpp`                      | Node can receive basic multi-part payments                | IN9      | `payment_secret`  | [BOLT #4][bolt04-mpp]                 |
 | 18/19 | `option_support_large_channel`   | Can create large channels                                 | IN       |                   | [BOLT #2](02-peer-protocol.md#the-open_channel-message) |
+| 28/29 | `option_dual_fund`               | Use v2 of channel open, enables dual funding              | IN9      |                   | [BOLT #2](02-peer-protocol.md)        |
 
 ## Requirements
 
