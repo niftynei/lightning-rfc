@@ -45,7 +45,7 @@
    temporary_channel_id=0000000000000000000000000000000000000000000000000000000000000000
    funding_satoshis=0
    dust_limit_satoshis=546
-   max_htlc_value_in_flight_msat=4294967295
+   max_htlc_value_in_flight_msat=18446744073709551615
    htlc_minimum_msat=0
    minimum_depth=3
    to_self_delay=6
