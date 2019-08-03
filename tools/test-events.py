@@ -134,13 +134,16 @@ def unpack_from(typename, bytestream, offset):
         size = struct.calcsize(name2structfmt[typename])
         if size + offset > len(bytestream):
             return None, None
-        return (struct.calcsize(name2structfmt[typename]),
-                struct.unpack_from(name2structfmt[typename], bytestream,
-                                   offset)[0])
+        return (size, struct.unpack_from(name2structfmt[typename],
+                                         bytestream, offset)[0])
 
     # FIXME: This is our non-TLV code
     if typename.endswith('_tlvs'):
         return len(bytestream) - offset, bytestream[offset:]
+
+    if typename in Subtype.objs:
+        subtype = Subtype.objs[typename]
+        return subtype.unpack(bytestream, offset)
 
     # Unpack directly as bytes
     size = name2size[typename]
@@ -410,7 +413,8 @@ class Subtype(Message):
                     i += 1
             return arr, len(arr)
         else:
-            return self._parse_obj(line, s), None
+            _, obj = self.parse_obj(line, s)
+            return obj, None
 
     def _parse_obj(self, line, s):
         if s[0] != '{':
@@ -498,6 +502,79 @@ class Subtype(Message):
                     bites += pack(f.typename, val)
         return bites
 
+    def unpack(self, bytestream, offset):
+        """ For every field, unpack it"""
+        result = {}
+        lenfields = {}
+        offset_start = offset
+        for f in self.fields:
+            offset, v = unpack_field(f, lenfields, bytestream, offset)
+            result[f.name] = v
+
+        return offset - offset_start, result
+
+    def compare(self, msgname, vals, expected):
+        if not bool(expected):
+            if bool(vals):
+                return ("Nothing expected for {}.{} but returned {}"
+                        .format(msgname, self.name, vals))
+            return None
+        for name, exp_val in expected.items():
+            if name not in vals:
+                return ("Expected field {}.{}.{} "
+                        "not present in values"
+                        .format(msgname, self.name, name))
+
+            f = self.findField(name)
+            if not f:
+                return ("Field {} is not known for subtype {}({})"
+                       .format(name, self.name, msgname))
+
+            val = vals[name]
+            err = compare_results(msgname + "." + self.name, f, val, exp_val)
+            if err is not None:
+                return err
+
+        return None
+
+
+def unpack_field(field, lenfields, bytestream, offset):
+    # If it's an array, we need the whole thing.
+    if field.arrayvar or field.arraylen:
+        if field.arrayvar:
+            num = lenfields[field.arrayvar.name]
+        else:
+            num = field.arraylen
+        # Array of bytes is special: treat raw.
+        if field.typename == 'byte':
+            v = bytestream[offset:offset + num]
+            offset += num
+        else:
+            v = []
+            for i in range(0, num):
+                size, var = unpack_from(field.typename, bytestream, offset)
+                if size is None:
+                    raise ValueError('Response too short to extract {}[{}]: {}'
+                                     .format(field.name, i, bytestream.hex()))
+                offset += size
+                v += [var]
+    else:
+        size, v = unpack_from(field.typename, bytestream, offset)
+        if size is None:
+            # Optional fields might not exist
+            if field.options != []:
+                v = None
+                size = 0
+            else:
+                raise ValueError('Response too short to extract {} {} ({}): {}'
+                                 .format(field.name, field.typename, offset, v))
+        offset += size
+
+    # If it's used as a length, save it.
+    if field.islenvar:
+        lenfields[field.name] = int(v)
+
+    return offset, v
 
 def read_csv(args):
     for line in fileinput.input(args.csv_file):
@@ -685,6 +762,53 @@ class RecvEvent(object):
         runner.recv(which_connection(line, runner, self.connkey),
                     self.b, line)
 
+def compare_results(msgname, f, v, exp):
+    """ f -> field; v -> value; exp -> expected value """
+
+    # If they specify field=absent, it must not be there.
+    if exp is None:
+        if v is not None:
+            return "Field {} is present"
+        else:
+            return None
+
+    if v is None:
+        return ("Optional field {} is not present"
+                .format(f.name))
+    if isinstance(exp, tuple):
+        # Out-of-range bitmaps are considered 0 (eg. feature tests)
+        if len(v) < len(exp[0]):
+            cmpv = b'\x00' * (len(exp[0]) - len(v)) + v
+        elif len(v) > len(exp[0]):
+            cmpv = v[-len(exp[0]):]
+        else:
+            cmpv = v
+
+        for i in range(0, len(exp[0])):
+            if cmpv[i] & exp[1][i] != exp[0][i]:
+                return ("Expected {}.{} mask 0x{}"
+                        " value 0x{} but got 0x{}"
+                        " (offset {} different)"
+                        .format(msgname, f.name,
+                                exp[1].hex(), exp[0].hex(),
+                                v.hex(), len(exp[0]) - 1 - i))
+    # Use subtype comparer
+    elif f.typename in Subtype.objs:
+        return Subtype.objs[f.typename].compare(msgname, v[0], exp[0])
+
+    # Simple comparison
+    elif v != exp:
+        if f.isinteger:
+            valstr = str(v)
+            expectstr = str(exp)
+        else:
+            valstr = v.hex()
+            expectstr = exp.hex()
+        return ("Expected {}.{} {} but got {}"
+                .format(msgname,
+                        f.name, expectstr, valstr))
+    return None
+
 
 def message_match(expectmsg, expectfields, b):
     """Internal helper to see if b matches expectmsg & expectfields.
@@ -693,91 +817,21 @@ def message_match(expectmsg, expectfields, b):
     msgtype = struct.unpack_from(">H", b)[0]
     off = 2
 
-    # Keep length fields
-    lenfields = {}
     if msgtype != expectmsg.value:
         return "Expected msg {} but got {}: {}".format(expectmsg.name,
                                                        msgtype, b.hex())
+    # Keep length fields
+    lenfields = {}
     for f in expectmsg.fields:
-        # If it's an array, we need the whole thing.
-        if f.arrayvar or f.arraylen:
-            if f.arrayvar:
-                num = lenfields[f.arrayvar.name]
-            else:
-                num = f.arraylen
-            # Array of bytes is special: treat raw.
-            if f.typename == 'byte':
-                v = b[off:off + num]
-                off += num
-            else:
-                v = []
-                for i in range(0, num):
-                    size, var = unpack_from(f.typename, b, off)
-                    if size is None:
-                        return ('Response too short to extract {}[{}]: {}'
-                                .format(f.name, i, b.hex()))
-                    off += size
-                    v += [var]
-        else:
-            size, v = unpack_from(f.typename, b, off)
-            if size is None:
-                # Optional fields might not exist
-                if f.options != []:
-                    v = None
-                    size = 0
-                else:
-                    return ('Response too short to extract {}: {}'
-                            .format(f.name, b.hex()))
-            off += size
-
-        # If it's used as a length, save it.
-        if f.islenvar:
-            lenfields[f.name] = int(v)
+        off, v = unpack_field(f, lenfields, b, off)
 
         # They expect a value from this.
         if f.name in expectfields:
             exp = expectfields[f.name]
+            err = compare_results(expectmsg.name, f, v, exp)
+            if err is not None:
+                return err + ": {}".format(b.hex())
 
-            # If they specify field=absent, it must not be there.
-            if exp is None:
-                if v is not None:
-                    return "Field {} is present"
-                else:
-                    continue
-
-            if v is None:
-                return ("Optional field {} is not present in {}"
-                        .format(f.name, b.hex()))
-            if isinstance(exp, tuple):
-                # Out-of-range bitmaps are considered 0 (eg. feature tests)
-                if len(v) < len(exp[0]):
-                    cmpv = b'\x00' * (len(exp[0]) - len(v)) + v
-                elif len(v) > len(exp[0]):
-                    cmpv = v[-len(exp[0]):]
-                else:
-                    cmpv = v
-
-                for i in range(0, len(exp[0])):
-                    if cmpv[i] & exp[1][i] != exp[0][i]:
-                        return ("Expected {}.{} mask 0x{}"
-                                " value 0x{} but got 0x{}"
-                                " (offset {} different):"
-                                " {}"
-                                .format(expectmsg.name, f.name,
-                                        exp[1].hex(), exp[0].hex(),
-                                        v.hex(), len(exp[0]) - 1 - i,
-                                        b.hex()))
-            # Simple comparison
-            elif v != exp:
-                if f.isinteger:
-                    valstr = str(v)
-                    expectstr = str(exp)
-                else:
-                    valstr = v.hex()
-                    expectstr = exp.hex()
-                return ("Expected {}.{} {} but got {}: {}"
-                        .format(expectmsg.name,
-                                f.name, expectstr, valstr, b.hex()))
     return None
 
 
