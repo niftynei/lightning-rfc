@@ -52,7 +52,7 @@ def verify(privkey, hash_digest, sig):
     pubkey = key.get_verifying_key()
     digest = bytes.fromhex(hash_digest)
 
-    if len(sig) != 64:
+    if len(sig) < 64 or len(sig) > 66:
         raise ValueError("Expected a 64-byte array for sig, got {} ({})".format(len(sig), sig.hex()))
 
     r = int.from_bytes(sig[:32], byteorder='big', signed=False)
