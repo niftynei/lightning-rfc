@@ -324,6 +324,11 @@ class Field(object):
         try:
             v = bytes.fromhex(s)
         except ValueError:
+            # Hexes of variable value but a 'fixed' length are denoted with
+            # as field=*<num> or field=*<num>-<num>, where <num> is the
+            # count of bytes the hex value should be, in total
+            if s.startswith('*'):
+                return s
             raise LineError(line, "Non-hex value for {}: '{}'"
                             .format(typename, s))
 
