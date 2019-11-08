@@ -135,8 +135,7 @@ def pack(typename, v):
 
     # Is 'SIG()' tuple?
     if typename == 'signature' and isinstance(v, tuple):
-        r, s = Sigs.generate(v[0], v[1])
-        return bytes.fromhex(r+s)
+        return Sigs.generate_sig(v[0], v[1])
 
     # Pack directly as bytes
     assert len(v) == name2size[typename]
@@ -856,8 +855,8 @@ class RecvEvent(object):
                 for a in v:
                     self.b += pack(f.typename, a)
             elif f.typename == 'signature' and isinstance(v, list):
-                r, s = Sigs.generate_sig(v[0], v[1])
-                self.b += pack(f.typename, bytes.fromhex(r+s))
+                sig = Sigs.generate_sig(v[0], v[1])
+                self.b += pack(f.typename, sig)
             else:
                 self.b += pack(f.typename, v)
 
@@ -884,7 +883,7 @@ def compare_results(msgname, f, v, exp):
     if isinstance(exp, tuple):
         if f.typename == 'signature':
             # v should be a valid signature, a byte-array r||s
-            if not Sigs.verify(exp[0], exp[1], v):
+            if not Sigs.verify_sig(exp[0], exp[1], v):
                 return "Invalid signature ({}) for privkey {}, hash {}".format(v.hex(), exp[0], exp[1])
             return None
 
