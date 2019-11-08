@@ -113,7 +113,8 @@ include setup.incl
        next_revocation_number=0
        your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
        your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
-       my_current_per_commitment_point=0288a618cb6027c3218a37cbe9e882379f17d87d03f6e99d0b60292478d2aded06 option_data_loss_protect !option_static_remotekey
+       # We send *any* valid key, so just check that it's a 33-byte hex value
+       my_current_per_commitment_point=*33 option_static_remotekey
     6. recv: type=channel_reestablish
        channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
        next_commitment_number=1
@@ -166,6 +167,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=0288a618cb6027c3218a37cbe9e882379f17d87d03f6e99d0b60292478d2aded06 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=1
@@ -224,6 +226,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=1
@@ -257,6 +260,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=1
@@ -284,6 +288,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=2
@@ -319,6 +324,7 @@ include setup.incl
            your_last_per_commitment_secret=02a40c85b6f28da08dfdbe0926c53fab2de6d28c10301f8f7c4073d5e42e3148 option_data_loss_protect
            your_last_per_commitment_secret=02a40c85b6f28da08dfdbe0926c53fab2de6d28c10301f8f7c4073d5e42e3148 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=2
@@ -358,6 +364,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=0288a618cb6027c3218a37cbe9e882379f17d87d03f6e99d0b60292478d2aded06 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=1
@@ -433,6 +440,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=1
@@ -466,6 +474,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=1
@@ -493,6 +502,7 @@ include setup.incl
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_data_loss_protect
            your_last_per_commitment_secret=0000000000000000000000000000000000000000000000000000000000000000 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=2
@@ -528,6 +538,7 @@ include setup.incl
            your_last_per_commitment_secret=02a40c85b6f28da08dfdbe0926c53fab2de6d28c10301f8f7c4073d5e42e3148 option_data_loss_protect
            your_last_per_commitment_secret=02a40c85b6f28da08dfdbe0926c53fab2de6d28c10301f8f7c4073d5e42e3148 option_static_remotekey !option_data_loss_protect
            my_current_per_commitment_point=032405cbd0f41225d5f203fe4adac8401321a9e05767c5f8af97d51d2e81fbb206 option_data_loss_protect !option_static_remotekey
+           my_current_per_commitment_point=*33 option_static_remotekey
         6. recv: type=channel_reestablish
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
            next_commitment_number=2
