@@ -29,7 +29,7 @@ def generate(privkey, hash_digest):
     digest = bytes.fromhex(hash_digest)
     sig = key.sign_digest(digest, sigencode=sigencode_der)
     r_int, s_int = sigdecode_der(sig, SECP256k1.generator.order())
-    return hex(r_int)[2:], hex(s_int)[2:]
+    return "{:064x}".format(r_int), "{:064x}".format(s_int)
 
 
 def verify(privkey, hash_digest, sig):
