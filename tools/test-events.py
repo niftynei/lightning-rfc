@@ -853,11 +853,13 @@ class RecvEvent(object):
             v = values[f.name]
             if f.arrayvar or f.arraylen:
                 for a in v:
+                    if f.typename == 'signature' and isinstance(a, tuple):
+                        sig = Sigs.generate_sig(v[0], v[1])
+                        a = sig
                     self.b += pack(f.typename, a)
-            elif f.typename == 'signature' and isinstance(v, list):
-                sig = Sigs.generate_sig(v[0], v[1])
-                self.b += pack(f.typename, sig)
             else:
+                if f.typename == 'signature' and isinstance(v, tuple):
+                    v = Sigs.generate_sig(v[0], v[1])
                 self.b += pack(f.typename, v)
 
         if 'extra' in d:
@@ -880,13 +882,28 @@ def compare_results(msgname, f, v, exp):
     if v is None:
         return ("Optional field {} is not present"
                 .format(f.name))
-    if isinstance(exp, tuple):
-        if f.typename == 'signature':
-            # v should be a valid signature, a byte-array r||s
-            if not Sigs.verify_sig(exp[0], exp[1], v):
-                return "Invalid signature ({}) for privkey {}, hash {}".format(v.hex(), exp[0], exp[1])
+
+    # Do signature verification, if necessary
+    if (f.typename == 'signature' and isinstance(exp,tuple)) or (f.typename == 'signature'
+            and (f.arrayvar or f.arraylen) and isinstance(exp,list)):
+            if f.arrayvar or f.arraylen:
+                for (e, val) in list(map(lambda x,y: (x,y), exp, v)):
+                    if isinstance(e, tuple):
+                        if not Sigs.verify_sig(e[0], e[1], val):
+                            return "Invalid signature ({}) for privkey {}, hash {}".format(
+                                    val.hex(), e[0], e[1])
+                    elif e != val:
+                        return ("Expected {}.{}(type:{}) {} but got {}"
+                                .format(msgname,
+                                        f.name, f.typename, e.hex(), val.hex()))
+            else:
+                # v should be a valid signature, a byte-array r||s
+                if not Sigs.verify_sig(exp[0], exp[1], v):
+                    return "Invalid signature ({}) for privkey {}, hash {}".format(v.hex(), exp[0], exp[1])
+            # Successfully matched all sigs!!
             return None
 
+    if isinstance(exp, tuple):
         # Out-of-range bitmaps are considered 0 (eg. feature tests)
         if len(v) < len(exp[0]):
             cmpv = b'\x00' * (len(exp[0]) - len(v)) + v
