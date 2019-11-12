@@ -193,8 +193,8 @@ include setup.incl
     
     2. recv: type=commitment_signed
        channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
-       signature=a42ddd9ab2b171f945e1ac536cd2fc7e4c39d9f0fbb6172f3ec88020e8240033336f9d79ddad09391b41e5127c457abc2d59e59fb398cdd1cd5baed5ba16480c !option_static_remotekey
-       signature=05f85dd6f09a5004f11140b2da5b7c1e2debfd84232b04943b26a10da4f30856670e670e6618629f95d3b76f0167a9d906f92f2023884c8b24354b78be8b6fb8 option_static_remotekey
+       signature=SIG(0000000000000000000000000000000000000000000000000000000000000020:15d8bb3b8ec14a670144d6d06c399e68fe8cf472d889ed65084d86da20064930) !option_static_remotekey
+       signature=SIG(0000000000000000000000000000000000000000000000000000000000000020:a52afdb15b8282c140516e809793bafb5d7d8f20d246ffe390e837c6a03889b8) option_static_remotekey
        htlc_signature=
 
     3. expect-send: type=revoke_and_ack
@@ -205,7 +205,7 @@ include setup.incl
     
     4. expect-send: type=commitment_signed
        channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
-       signature=0c10c223bc7db29d6a9bb054ecf2d72d26e2c73b9ebc653c13a965219f28e29f79e639f01f5082a4b155bbcb0a50acbd5ad9e5c1b4e62b369c57f4b85afa9164
+       signature=SIG(0000000000000000000000000000000000000000000000000000000000000010:8319b604143b4dedec0f3670abdf7d1a1c320aaefe589dba4aefbb1d083ec22d)
        htlc_signature=
     
         # Optional reconnection testing.
@@ -245,7 +245,7 @@ include setup.incl
            next_per_commitment_point=03bca7c4ebe7eb7e8e40b8c2a7b4dde7f4d48404c9a62859d09fe2d00151af40ad
         9. expect-send: type=commitment_signed
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
-           signature=0c10c223bc7db29d6a9bb054ecf2d72d26e2c73b9ebc653c13a965219f28e29f79e639f01f5082a4b155bbcb0a50acbd5ad9e5c1b4e62b369c57f4b85afa9164
+           signature=SIG(0000000000000000000000000000000000000000000000000000000000000010:8319b604143b4dedec0f3670abdf7d1a1c320aaefe589dba4aefbb1d083ec22d)
            htlc_signature=
     
         # If tester did receive node's revoke_and_ack, but not commitment_signed
@@ -273,7 +273,7 @@ include setup.incl
         7. $MAYBE_UPDATE
         8. expect-send: type=commitment_signed
            channel_id=2f0b21d6bd32971ca6803de2bdc7370bbf12e0cd9ce73afc1c591f5c995b0841
-           signature=0c10c223bc7db29d6a9bb054ecf2d72d26e2c73b9ebc653c13a965219f28e29f79e639f01f5082a4b155bbcb0a50acbd5ad9e5c1b4e62b369c57f4b85afa9164
+           signature=SIG(0000000000000000000000000000000000000000000000000000000000000010:8319b604143b4dedec0f3670abdf7d1a1c320aaefe589dba4aefbb1d083ec22d)
            htlc_signature=
 
         # If tester did receive node's commitment_signed
