@@ -854,7 +854,7 @@ class RecvEvent(object):
             if f.arrayvar or f.arraylen:
                 for a in v:
                     if f.typename == 'signature' and isinstance(a, tuple):
-                        sig = Sigs.generate_sig(v[0], v[1])
+                        sig = Sigs.generate_sig(a[0], a[1])
                         a = sig
                     self.b += pack(f.typename, a)
             else:
