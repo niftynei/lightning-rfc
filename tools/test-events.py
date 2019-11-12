@@ -311,12 +311,12 @@ class Field(object):
                                 .format(typename, name2size[typename]))
             return v
 
-        # Special handling for 'SIG(privkey,hash)'
+        # Special handling for 'SIG(privkey:hash)'
         if s.startswith('SIG('):
             if not s.endswith(')'):
                 raise LineError(line, "SIG() improperly formatted. {}".format(s))
 
-            privkey, hash_digest = s[4:-1].split(',')
+            privkey, hash_digest = s[4:-1].split(':')
             return (privkey, hash_digest)
 
         # Everything else is a hex string.
@@ -1023,7 +1023,7 @@ class ExpectSendEvent(object):
 
         for v in d.keys():
             # IDENTIFIER`=`FIELDVALUE | IDENTIFIER`=`HEX/HEX | `absent` |
-            #   IDENTIFIER`=`SIG(HEX,HEX)
+            #   IDENTIFIER`=`SIG(HEX:HEX)
             f = self.expectmsg.findField(v)
 
             parts = d[v].partition('/')
