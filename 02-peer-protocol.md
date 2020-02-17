@@ -12,6 +12,7 @@ operation, and closing.
       * [Fee Responsibility](#fee-responsibility)
       * [Overview](#overview)
       * [The `tx_add_input` Message](#the-tx_add_input-message)
+      * [Proof of Discrete Log Equivalence](#proof-of-discrete-log-equivalence).
       * [The `tx_add_output` Message](#the-tx_add_output-message)
       * [The `tx_remove_input` Message](#the-tx_remove_input-message)
       * [The `tx_remove_output` Message](#the-tx_remove_output-message)
@@ -94,6 +95,7 @@ The protocol that follows makes the following assumptions:
   established via convention.
 - The transaction version is 2.
 - The each input's sequence number will be set to 0xFDFFFFFF (little endian), which signals RBF.
+- The initiator has furnished a PoDLE commitment, if required.
 
 ### Fee Responsibility
 
@@ -178,6 +180,16 @@ This message contains information for inputs to a funding transaction.
     * [`u16`:`max_witness_len`]
     * [`u16`:`redeemscript_len`]
     * [`redeemscript_len*byte`:`script`]
+    * [`tx_add_input_tlvs`:`tlvs`]
+
+1. tlvs: `tx_add_input_tlvs`
+2. types:
+   1. type: 2 (`podle_proof`)
+   2. data:
+       * [`point`:`p`]
+       * [`point`:`p2`]
+       * [`sha256`:`e`]
+       * [`32*byte`:`sig`]
 
 #### Requirements
 
@@ -222,6 +234,97 @@ script should not be included in the transmitted `script` data.
 
 Native SegWit inputs (P2WPKH and P2WSH) inputs will have an
 empty `script` field See [BIP141](https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#examples).
+
+#### Proof of Discrete Log Equivalence
+
+The `podle_proof` TLV type furnishes the data necessary to verify
+a PoDLE commitment, as exchanged during the initiation phase.
+
+`e` is the sha256(kG || kJ || P || P2 || `node_id`) where:
+  - `kG` is the compressed point representation of a randomly chosen 32-byte nonce
+    , `k, multiplied by the generator point `G`
+  - `kJ` is the compressed point representation of `k` by the NUMS point `J`
+  - `P` is the compressed point representation of the utxo secret key (`x`)
+     times the generator point, `xG`, or `pubkey` for secret `x`
+  - `P2` is the compressed point representation of the point `J` by `x`, or `xJ`
+  - `node_id` is the 33-byte id of the node receiving this proof
+
+`sig` is the signature, `k + x * e` (over the secp256k1 finite field)
+
+Note that `x` is the private key of a pubkey that the utxo is locked to.
+
+The commitment, `podle_h2`, is the sha256 hash of the compressed point
+representation of `P2`, or `xJ`.
+
+The signature can be verified by the recipient as follows:
+  - `kG = sG - eP`, where `s` is the received `sig` value
+  - `kJ = sJ - eP2`
+  - `sha256(kG || kJ || P || P2 || node_id)` where the point value is
+    in 33-byte compressed format and `node_id` is the 33-byte public
+    key node_id of the recipient.
+
+##### Deriving J
+A proof of discrete logarithm requires two points. The first point is `G`,
+the generator point for secp256k1. The second is found using a deterministic
+process, and is also referred to as a [NUMS](https://en.wikipedia.org/wiki/Nothing-up-my-sleeve_number)
+point. The process for finding the `J` point is borrowed from the [JoinMarket
+algorithm](https://github.com/JoinMarket-Org/joinmarket-clientserver/blob/4bf1f50d4e4226b00fd5a8bd39673faceac9da51/jmclient/jmclient/podle.py#L203-L235), such that the H2 commitments for either system may be theoretically
+shared.
+
+JoinMarket's algorithm for deriving `J` allows for up to 256 points, identified
+by an `index`. For the Lightning Network, we allow `H2` commitments to be derived
+from either the index `0` or `1`.
+
+Given an index `i`, `J` is to be found as follows:
+  - For `c` in the range 0 to 255,
+    - Find `sha = sha256( G || i || c)` where `G` is the 33-byte
+      compressed point representation of the secp256k1 generator point
+    - Create a positive compressed point representation from `sha` as
+      `02 || sha`
+    - Check if the resulting point is on the secp256k1 curve. If so,
+      this is the `J` point for this index. If not, continue with the next
+      value for `c`
+
+This algorithm will give the following `J` points:
+
+| `i`, index | J                                                                |
+|------------|------------------------------------------------------------------|
+| 0          |0296f47ec8e6d6a9c3379c2ce983a6752bcfa88d46f2a6ffe0dd12c9ae76d01a1f|
+| 1          |023f9976b86d3f1426638da600348d96dc1f1eb0bd5614cc50db9e9a067c0464a2|
+
+##### Requirements
+The sender:
+  - MUST calculate the `e`, `sig`, and `p2` for the key-pair that the
+    corresponding utxo is locked to
+
+The receiver:
+  - if the sha256(P2) is NOT equal to the `podle_h2` communicated during
+      the initiation phase:
+    - MAY error
+    - MUST wait until a `tx_add_input` with a matching `podle_h2` is received
+      and verified before sending their own `tx_add_input`
+    - SHOULD abort the verification process
+  - if the utxo `prevtx_scriptpubkey` is NOT locked to by the provided `pubkey`. (This may
+      require computing the hash160 of the pubkey if the script type is P2WPKH):
+    - MUST error
+  - if the signature is incorrect, or `sha256(kG||kJ||P||P2||node_id) != e`:
+    - MUST error
+  - if the sender errors the transaction collaboration after `tx_complete` has been
+    negotiated:
+     - SHOULD broadcast a `blacklist_podle` gossip message for the `podle_h2` of this
+       transaction collaboration
+
+##### Rationale
+The PoDLE protocol allows a peer to prove ownership of a utxo involved in a
+transaction collaboration. This serves as a rate-limiting mechanism for
+malicious behavior and allows honest nodes to share information about
+malicious attempts. A malicious node attempting to probe a `contributor`'s
+utxo shot, in the best case, is only granted one attempt per node. We limit
+probe attempts across the network by gossiping bad actor's H2 commitments.
+
+PoDLEs will not stop a determined attacker from repeatedly probing a node,
+but it does increase the cost of doing so and effectively rate-limits
+such attempts.
 
 
 ### The `tx_add_output` Message
@@ -828,6 +931,7 @@ This message initiates the v2 channel establishment workflow.
 1. type: 64 (`open_channel2`)
 2. data:
    * [`chain_hash`:`chain_hash`]
+   * [`sha256`:`podle_h2`]
    * [`u32`:`feerate_per_kw_funding`]
    * [`u64`:`funding_satoshis`]
    * [`u64`:`dust_limit_satoshis`]
@@ -866,8 +970,17 @@ If nodes have negotiated `option_dual_fund`:
 The receiving node:
   - if it does not agree to the `locktime` or `feerate_perkw_funding`:
     - MAY error
+  - if the `podle_h2` is found in the `podle_blacklist`:
+    - SHOULD allow the channel establishment to proceed
+    - SHOULD NOT send any `tx_add_input` with their own inputs
 
 #### Rationale
+`podle_h2` is the proof of discrete log equivalence commitment for
+one input to the funding transaction, calculated as the sha256(`P2`)
+See [Proof of Discrete Log Equivalence](#podle-proof-of-discrete-log-equivalence).
+A blacklist is shared among peers via the gossip message [`blacklist_podle`](#todo).
+If a `podle_h2` is has been shared over the gossip network, this peer should be
+considered unsafe to share utxos with for this open channel negotiation.
 
 `feerate_per_kw_funding` indicates the fee rate that the opening node will
 pay for the funding transaction in satoshi per 1000-weight, as described

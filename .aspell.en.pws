@@ -33,6 +33,16 @@ decrypting
 rhokey
 rhoKey
 buf
+PoDLE
+PoDLEs
+kJ
+kG
+sJ
+sG
+eP
+NUMS
+JoinMarket
+JoinMarket's
 millisatoshis
 yToX
 funder's
@@ -129,6 +139,7 @@ subsubtype
 redeemScript
 UTXO
 utxo
+utxos
 scriptPubkey
 scriptPubKey
 scriptPubKeys
