@@ -978,7 +978,7 @@ The receiving node:
 `podle_h2` is the proof of discrete log equivalence commitment for
 one input to the funding transaction, calculated as the sha256(`P2`)
 See [Proof of Discrete Log Equivalence](#podle-proof-of-discrete-log-equivalence).
-A blacklist is shared among peers via the gossip message [`blacklist_podle`](#todo).
+A blacklist is shared among peers via the gossip message [`blacklist_podle`](#07-routing-gossip.md#the-blacklist_podle-message).
 If a `podle_h2` is has been shared over the gossip network, this peer should be
 considered unsafe to share utxos with for this open channel negotiation.
 
