@@ -94,7 +94,6 @@ The protocol that follows makes the following assumptions:
 - The `nLocktime` for the transaction has already been communicated, or is
   established via convention.
 - The transaction version is 2.
-- The each input's sequence number will be set to 0xFDFFFFFF (little endian), which signals RBF.
 - The initiator has furnished a PoDLE commitment, if required.
 
 ### Fee Responsibility
@@ -222,7 +221,9 @@ Inputs in the final transaction will be sorted by `serial_id`.
 `prevtx_tx` is the serialized transaction whose output this node is spending. Must
 be sent to verify that output is in fact a SegWit output.
 
- `prevtx_vout` output index of the output being spent.
+`prevtx_vout` output index of the output being spent.
+
+`sequence` is the sequence number of this input.
 
 `script` is the script signature field for the input.
 Only applicable for P2SH-wrapped inputs. The length of the
