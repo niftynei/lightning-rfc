@@ -105,7 +105,6 @@ to be referred to as the `common fields`.
   - segwit marker + flag
   - input count
   - output count
-  - witness count
   - locktime
 
 Each party to the transaction is responsible for paying the fees for
@@ -118,9 +117,9 @@ The initiator begins the interactive protocol by sending a `tx_add_input`
 message or messages. The contributor responds with any of `tx_add_input`,
 `tx_add_output`, `tx_complete`.
 
-Once both peers have sent `tx_complete` in succession, the coordinated transaction
-is considered final. At this point both peers should construct the transaction
-and issue any errors, detailed below.
+Once both peers have sent `tx_complete` in succession, the coordinated
+transaction is considered final. At this point both peers 
+should construct the transaction and issue any errors, detailed below.
 
 Here are a few example exchanges.
 
