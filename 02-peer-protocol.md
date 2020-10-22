@@ -171,7 +171,7 @@ This message contains information for inputs to a funding transaction.
 1. type: 66 (`tx_add_input`)
 2. data:
     * [`channel_id`:`channel_id`]
-    * [`u16`:`serial_id`]
+    * [`u64`:`serial_id`]
     * [`u16`:`prevtx_len`]
     * [`prevtx_len*byte`:`prevtx`]
     * [`u32`:`prevtx_vout`]
@@ -331,7 +331,7 @@ This message contains information for outputs to a funding transaction.
 1. type: 67 (`tx_add_output`)
 2. data:
     * [`channel_id`:`channel_id`]
-    * [`u16`:`serial_id`]
+    * [`u64`:`serial_id`]
     * [`u64`:`sats`]
     * [`u16`:`scriptlen`]
     * [`scriptlen*byte`:`script`]
@@ -372,7 +372,7 @@ This message removes an input from the transaction
 1. type: 68 (`tx_remove_input`)
 2. data:
     * [`channel_id`:`channel_id`]
-    * [`u16`:`serial_id`]
+    * [`u64`:`serial_id`]
 
 #### Requirements
 
@@ -393,7 +393,7 @@ This message removes an output from the transaction
 1. type: 69 (`tx_remove_output`)
 2. data:
     * [`channel_id`:`channel_id`]
-    * [`u16`:`serial_id`]
+    * [`u64`:`serial_id`]
 
 #### Requirements
 
