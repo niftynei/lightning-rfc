@@ -948,7 +948,9 @@ This message initiates the v2 channel establishment workflow.
 2. data:
    * [`chain_hash`:`chain_hash`]
    * [`sha256`:`podle_h2`]
-   * [`u32`:`feerate_per_kw_funding`]
+   * [`u32`:`feerate_funding_max`]
+   * [`u32`:`feerate_funding_min`]
+   * [`u32`:`feerate_funding_best`]
    * [`u64`:`funding_satoshis`]
    * [`u64`:`dust_limit_satoshis`]
    * [`u64`:`max_htlc_value_in_flight_msat`]
@@ -983,6 +985,15 @@ If nodes have negotiated `option_dual_fund`:
   - the opening node:
     - MUST NOT send `open_channel`
 
+The sending node:
+  - MUST set `feerate_funding_min` to the lowest acceptable feerate
+    they will accept for the funding transaction.
+  - MUST set `feerate_funding_max` to the highest acceptable feerate
+    they will accept for the funding transaction.
+  - MUST set `feerate_funding_best` to a number equal to or above
+    the `feerate_funding_min` and equal to or below the
+    `feerate_funding_max`.
+
 The receiving node:
   - if it does not agree to the `locktime` or `feerate_perkw_funding`:
     - MAY error
@@ -1010,10 +1021,15 @@ or the `dust_limit_satoshis`, whichever is greater.
 
 `locktime` is the locktime for the funding transaction.
 
-The receiving node, if it finds the `locktime` or `feerate_perkw_funding`
+The receiving node, if it finds the `locktime` or `feerate_funding`
 out of bounds of an acceptable range, may send an error. The recommend
 approach, however, is to allow the channel open to proceed without
-participating in channel's funding.
+participating in the channel's funding.
+
+`feerate_funding_min`, `feerate_funding_max`, and `feerate_funding_best`
+are used in lieu of a feerate negotiation, designating a range of acceptable
+feerates for this channel open. `feerate_funding_best` is provided as hint
+to the preferred default of the peer.
 
 
 ### The `accept_channel2` Message
@@ -1025,6 +1041,7 @@ acceptance of the new channel.
 2. data:
     * [`channel_id`:`channel_id`]
     * [`u64`:`funding_satoshis`]
+    * [`u32`:`feerate_funding`]
     * [`u64`:`dust_limit_satoshis`]
     * [`u64`:`max_htlc_value_in_flight_msat`]
     * [`u64`:`htlc_minimum_msat`]
@@ -1056,6 +1073,11 @@ additions.
 The accepting node:
     - MAY respond with a `funding_satoshis` value of zero.
 
+The receiving node:
+    - if the `feerate_funding` is less than the `feerate_funding_min` or
+      above the `feerate_funding_max`
+        - MUST error.
+
 #### Rationale
 
 Accepter sends their `funding_satoshi` value here instead of allowing the opener to derive
@@ -1065,6 +1087,8 @@ to complete the opening without exposing their output set.
 `channel_reserve_satoshi` has been omitted. The channel reserve is fixed at 1% of
 the total channel balance (sum of `funding_satoshis` from `open_channel2` and `accept_channel2`)
 or the `dust_limit_satoshis`, whichever is greater.
+
+`feerate_funding` is the feerate that will be used for the funding transaction.
 
 
 ### Funding Composition
