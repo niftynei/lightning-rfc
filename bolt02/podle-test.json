@@ -1,0 +1,72 @@
+[
+	{
+		"verifies": true,
+		"comment": "Passing PoDLE",
+		"podle": {
+			"j_index": 0,
+			"privkey":"008b7b49075fa4f0df000000000000002300000000000000e025ef50fc7f000001",
+			"node_id": "23b6a5882dea6a0eadc3c951774bd40484b252069fa9f5e47a38e592aa5b8360e6",
+			"h2": "64da2aeb20cdca16b55acb21f8c17ba54bc85e36c684490a435fb98516ab1fc0",
+			"p2": "038cfc0dad6a16e950959ebd5a4d01514dcb15e7c903163cadd830636a1b4a74bd",
+			"p":  "02828f43464e9a0b8426c404e642774723351610d45841b26308ba2a862f81a375",
+			"sig":"76edcdb5790bd8c4247ad38d100d2ffbf600e14f667137b9f80f2f682177f294",
+			"e":  "ab816fbe604749429d3896c078bb7a6b9dbf5f9ce53b493f416fc2451276e544"
+		}
+	},
+	{
+		"verifies": true,
+		"comment": "Passing PoDLE",
+		"podle": {
+			"j_index": 1,
+			"privkey":"0093f0440596faac5d000000000000002300000000000000e025ef50fc7f000001",
+			"node_id":"6759f80bad40430607dee78ee96283caa8a423b402b2ae38ff783d75ddacfa768b",
+			"h2":"b16e33c5dc2ced17eb8bcb14a2db8dba1ee54453e2e282b6e3ecaeca6221a91e",
+			"p2":"03ced424078cbbdcc52af080ffc4e172c7a52a8afdf6d127179d7d4f55d4980053",
+			"p":"030f5c269fc748612f3a48c79d47978dc5560202cdc3ef1a7af050c0bf9bfcaef1",
+			"sig":"237dc7208494907e77f71d4d8941f22feb69103b3767ddb2ae61326394d387d6",
+			"e":"2b18b93d2da0e474cff14e932c77e3cb37d8fafe915fe8279af2bc9a8464daaf"
+		}
+	},
+	{
+		"verifies": false,
+		"comment": "Fails verification: H2 hash mismatch",
+		"podle": {
+			"j_index": 0,
+			"privkey":"008b7b49075fa4f0df000000000000002300000000000000e025ef50fc7f000001",
+			"node_id": "23b6a5882dea6a0eadc3c951774bd40484b252069fa9f5e47a38e592aa5b8360e6",
+			"h2":"74da2aeb20cdca16b55acb21f6c17ba54bc85e36c684490a435fb98516ab1fc8",
+			"p2":"038cfc0dad6a16e950959ebd5a4d01514dcb15e7c903163cadd830636a1b4a74bd",
+			"p":"02828f43464e9a0b8426c404e642774723351610d45841b26308ba2a862f81a375",
+			"sig":"76edcdb5790bd8c4247ad38d100d2ffbf600e14f667137b9f80f2f682177f294",
+			"e":"ab816fbe604749429d3896c078bb7a6b9dbf5f9ce53b493f416fc2451276e544"
+		}
+	},
+	{
+		"verifies": false,
+		"comment": "Fails verification: does not verify",
+		"podle": {
+			"j_index": 1,
+			"privkey":"0093f0440596faac5d000000000000002300000000000000e025ef50fc7f000001",
+			"node_id":"6759f80bad40430607dee78ee96283caa8a423b402b2ae38ff783d75ddacfa768b",
+			"h2":"b16e33c5dc2ced17eb8bcb14a2db8dba1ee54453e2e282b6e3ecaeca6221a91e",
+			"p2":"03ced424078cbbdcc52af080ffc4e172c7a52a8afdf6d127179d7d4f55d4980053",
+			"p":"030f5c269fc748612f3a48c79d47978dc5560202cdc3ef1a7af050c0bf9bfcaef1",
+			"sig":"238dc7208494907e77f71d4d8941f22feb69103b3767ddb2ae61326394d387d6",
+			"e":"2b18b93d2da0e474cff14e932c77e3cb37d8fafe915fe8279af2bc9a8464daaf"
+		}
+	},
+	{
+		"verifies": false,
+		"comment": "Fails verification: no valid J point found",
+		"podle": {
+			"j_index": 2,
+			"privkey":"0027189eb0eea8daf2000000000000002300000000000000e025ef50fc7f000001",
+			"node_id": "fbfeb5e4c8c11f0d92d5d5a649f736bbe83f23f143f6f0ae01aa5e68085e1ce4f6",
+			"h2":"ddb4e528f4e71514f9757dd2f6c7b901361068af7eaa450be9b910182f74beee",
+			"p2":"02515a430f638e5462cbbdf39e6182f8b6dbb92f3bdbf8dbb5da5212009435eb8b",
+			"p":"039e4feb8dd086bdc99b32d8b2156903f6c3c923c63de79c003f77ef1b09e7018f",
+			"sig":"96d1e431547a37435ec16b526e20ed430289c0b60406b3276cea3a3c52df7569",
+			"e":"8202fe4293a7182aa2f492f8a2927cbdce96cfb7b29fa7e3cebc6f856231dac1"
+		}
+	}
+]

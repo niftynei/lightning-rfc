@@ -142,7 +142,7 @@ Currently defined tagged fields are:
 * `n` (19): `data_length` 53. 33-byte public key of the payee node
 * `h` (23): `data_length` 52. 256-bit description of purpose of payment (SHA256). This is used to commit to an associated description that is over 639 bytes, but the transport mechanism for the description in that case is transport specific and not defined here.
 * `x` (6): `data_length` variable. `expiry` time in seconds (big-endian). Default is 3600 (1 hour) if not specified.
-* `c` (24): `data_length` variable. `min_final_cltv_expiry` to use for the last HTLC in the route. Default is 9 if not specified.
+* `c` (24): `data_length` variable. `min_final_cltv_expiry` to use for the last HTLC in the route. Default is 18 if not specified.
 * `f` (9): `data_length` variable, depending on version. Fallback on-chain address: for Bitcoin, this starts with a 5-bit `version` and contains a witness program or P2PKH or P2SH address.
 * `r` (3): `data_length` variable. One or more entries containing extra routing information for a private route; there may be more than one `r` field
    * `pubkey` (264 bits)
@@ -172,11 +172,10 @@ A writer:
   - MAY include one `x` field.
     - if `x` is included:
       - SHOULD use the minimum `data_length` possible.
-  - MAY include one `c` field.
+  - MUST include one `c` field (`min_final_cltv_expiry`).
     - MUST set `c` to the minimum `cltv_expiry` it will accept for the last
     HTLC in the route.
-    - if `c` is included:
-      - SHOULD use the minimum `data_length` possible.
+    - SHOULD use the minimum `data_length` possible.
   - MAY include one `n` field. (Otherwise performing signature recovery is required)
     - MUST set `n` to the public key used to create the `signature`.
   - MAY include one or more `f` fields.
@@ -214,6 +213,8 @@ A reader:
     - MUST use the `n` field to validate the signature instead of performing signature recovery.
   - if there is a valid `s` field:
     - MUST use that as [`payment_secret`](04-onion-routing.md#tlv_payload-payload-format)
+  - if the `c` field (`min_final_cltv_expiry`) is not provided:
+    - MUST use an expiry delta of at least 18 when making the payment
 
 ### Rationale
 

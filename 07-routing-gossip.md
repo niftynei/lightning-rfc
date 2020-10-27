@@ -27,6 +27,7 @@ To support channel and node discovery, three *gossip messages* are supported:
   * [The `channel_announcement` Message](#the-channel_announcement-message)
   * [The `node_announcement` Message](#the-node_announcement-message)
   * [The `channel_update` Message](#the-channel_update-message)
+  * [The `blacklist_podle` Message](#the-blacklist_podle-message)
   * [Query Messages](#query-messages)
   * [Initial Sync](#initial-sync)
   * [Rebroadcasting](#rebroadcasting)
@@ -559,6 +560,59 @@ the channel when the peer reestablishes contact.  Because gossip
 messages are batched and replace previous ones, the result may be a
 single seemingly-redundant update.
 
+## The `blacklist_podle` Message
+During the course of engaging in an interactive transaction construction,
+it's possible that the initiating peer will engage in malpractice, i.e.
+they'll initiate a channel open with the intention of probing your utxo
+set, proceeding with the channel open until you've relayed your inputs
+and then erring or failing to respond.
+
+To penalize nodes for this behavior, a `contributor` node should broadcast
+the `podle_h2` commitment that was received during the initiation phase of the
+[interactive transaction construction protocol](02-peer-protocol.md#interactive-transaction-construction)).
+
+When fielding initiation requests from nodes, `contributors` should verify
+that the provided H2 is not included in the set of blacklisted PoDLE
+commitments.
+
+1. type: 260 (`blacklist_podle`)
+2. data:
+    * [`signature`:`signature`]
+    * [`point`:`node_id`]
+    * [`32*byte`:`podle_h2`]
+    * [`u32`:`timestamp`]
+
+### Requirements
+
+The origin node:
+  - SHOULD send a `blacklist_podle` for a `podle_h2` commitment that has
+    failed or abandoned a transaction construction protocol after `tx_add_input`
+    from the `contributor` have been transmitted
+  - MUST set the timestamp to the current block height
+  - MUST compute the double-SHA256 hash `h` of the message, beginning at offset
+    32, up to the end of the message.
+    - Note: the hash skips the signature but hashes the rest of the message, including
+      any future fields appended to the end.
+    - MUST set `signature` to a valid signature of the hash `h` using `node_id`s secret
+
+The receiving node:
+  - MUST discard this message if:
+    - the `signature` is invalid
+    - the `timestamp` is more than 2 blocks in the future
+    - the `timestamp` is more than 4032 blocks (~four weeks) behind the current block tip
+  - SHOULD discard this message if:
+    - they've received more than 20 such much messages from this node at the specified block height
+    - they do not have a `node_announcement` for the issuing node
+
+### Rationale
+
+The `timestamp` allows a node to prune and ratelimit the rate at which `blacklist_podle`s are added
+to the local blacklist. Four weeks is chosen as the length of time which a utxo commitment
+is to be blacklisted for, as this rate limits the rate at which a node can attempt probing attacks.
+
+The `podle_h2` is the 32-byte sha256 of the `P2`. See [Proof of Discrete Log
+Equivalence](02-peer-protocol.md#proof-of-discrete-log-equivalence) for more details on this value.
+
 ## Query Messages
 
 Negotiating the `gossip_queries` option via `init` enables a number
@@ -981,7 +1035,7 @@ A node:
 #### Requirements
 
 A node:
-  - if a channel's latest `channel_update`s `timestamp` is older than two weeks
+  - if a channel's oldest `channel_update`s `timestamp` is older than two weeks
   (1209600 seconds):
     - MAY prune the channel.
     - MAY ignore the channel.
@@ -998,6 +1052,11 @@ both endpoints lose access to their private keys and can neither sign
 unlikely to be part of a computed route, since they would be partitioned off
 from the rest of the network; however, they would remain in the local network
 view would be forwarded to other peers indefinitely.
+
+The oldest `channel_update` is used to prune the channel since both sides need
+to be active in order for the channel to be usable. Doing so prunes channels
+even if one side continues to send fresh `channel_update`s but the other node
+has disappeared.
 
 ## Recommendations for Routing
 
