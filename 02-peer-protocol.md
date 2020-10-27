@@ -201,6 +201,7 @@ The sending node:
   - if is the `contributor`:
     - MAY omit this message
     - MUST send odd `serial_id`s
+  - MUST NOT send more than 2^12 `tx_add_input` messages
 
 The receiving node:
   - MUST add all received inputs to the funding transaction
@@ -209,6 +210,7 @@ The receiving node:
     - it receives an input that would create a malleable transaction id (e.g. pre-Segwit)
     - it receives a duplicate `serial_id`
     - it receives a `serial_id` from the peer with the incorrect parity
+    - it receives more than 2^12 `tx_add_input` messages
 
 #### Rationale
 Each node must have a complete set of the transaction inputs
@@ -346,12 +348,14 @@ The sending node:
   - MUST ensure the `script` is a standard script
   - MUST use a unique `serial_id` for each output
   - MUST specify a `sats` value greater than the dust limit
+  - MUST NOT send more than 2^12 `tx_add_output` messages
 
 The receiving node:
   - MUST add all received outputs to the collaborative transaction
   - MUST fail the transaction collaboration if:
     - it receives a duplicate `serial_id`
     - it receives a `serial_id` from the peer with the incorrect parity
+    - it receives more than 2^12 `tx_add_output` messages
 
 
 #### Rationale
@@ -378,6 +382,7 @@ This message removes an input from the transaction
 
 The sending node:
   - MUST NOT send a `tx_remove_input` for an input which is not theirs
+  - MUST NOT send more than 2^12 `tx_remove_input` messages
 
 The receiving node:
   - MUST remove the indicated input from the final transaction
@@ -385,6 +390,7 @@ The receiving node:
     - the `serial_id` is novel (has not been communicated previously)
   - MUST fail the channel if:
     - the `serial_id` matches one of the receiving node's inputs
+    - it receives more than 2^12 `tx_remove_input` messages
 
 
 ### The `tx_remove_output` Message
@@ -399,6 +405,7 @@ This message removes an output from the transaction
 
 The sending node:
   - MUST NOT send a `tx_remove_output` for an input which is not theirs
+  - MUST NOT send more than 2^12 `tx_remove_output` messages
 
 The receiving node:
   - MUST remove the indicated output from the final transaction
@@ -406,6 +413,7 @@ The receiving node:
     - the `serial_id` is novel (has not been communicated previously)
   - MUST fail the channel if:
     - the `serial_id` matches one of the receiving node's outputs
+    - it receives more than 2^12 `tx_remove_output` messages
 
 
 ### The `tx_complete` Message
