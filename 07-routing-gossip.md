@@ -262,6 +262,18 @@ nodes not associated with an already known channel are ignored.
    * [`32*byte`:`alias`]
    * [`u16`:`addrlen`]
    * [`addrlen*byte`:`addresses`]
+   * [`node_ann_tlvs`:`tlvs`]
+
+1. `tlv_stream`: `node_ann_tlvs`
+2. types:
+   1. type: 1 (`option_will_fund`)
+   2. data:
+       * [`u16`:`funding_fee_proportional_basis`]
+       * [`u32`:`funding_fee_base_sat`]
+       * [`u16`:`funding_weight_max`]
+       * [`u16`:`channel_fee_proportional_basis_max`]
+       * [`tu32`:`channel_fee_base_max_msat`]
+
 
 `timestamp` allows for the ordering of messages, in the case of multiple
 announcements. `rgb_color` and `alias` allow intelligence services to assign
@@ -312,6 +324,19 @@ The origin node:
   - MUST set `features` according to [BOLT #9](09-features.md#assigned-features-flags)
   - SHOULD set `flen` to the minimum length required to hold the `features`
   bits it sets.
+ - if supports `option_will_fund`:
+  - MUST include `option_will_fund` tlv type
+  - MUST set `funding_fee_base_sat` to the base fee (in satoshi) it will charge
+    for any reciprocated funding.
+  - MUST set `funding_fee_proportional_basis` to the amount (in
+    thousandths of a satoshi) it will charge per contributed satoshi.
+  - MUST set `funding_weight_max` to the maximum weight that will be charged
+    for any lease.
+  - MUST set `channel_fee_base_max_msat` to the maximum base fee
+    (in millisatoshi) it will charge for any HTLC during the funding period.
+  - MUST set `channel_fee_proportional_basis_max` to the max amount (in
+    thousandths of a satoshi) it will charge per transferred satoshi during
+    the funding period.
 
 The receiving node:
   - if `node_id` is NOT a valid compressed public key:
@@ -358,6 +383,12 @@ New address types may be added in the future; as address descriptors have
 to be ordered in ascending order, unknown ones can be safely ignored.
 Additional fields beyond `addresses` may also be added in the future—with
 optional padding within `addresses`, if they require certain alignment.
+
+If a node signals `option_will_fund`, they are signaling that they
+will provide funding to a node at the stated terms. They also commit
+to a feerate they will charge for transmitting funds over the channel
+for the duration of the funding lease.
+
 
 ### Security Considerations for Node Aliases
 

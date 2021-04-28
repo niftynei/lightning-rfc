@@ -41,6 +41,7 @@ operation, and closing.
       * [Committing Updates So Far: `commitment_signed`](#committing-updates-so-far-commitment_signed)
       * [Completing the Transition to the Updated State: `revoke_and_ack`](#completing-the-transition-to-the-updated-state-revoke_and_ack)
       * [Updating Fees: `update_fee`](#updating-fees-update_fee)
+      * [Updating Block Height: `update_blockheight` (`option_will_fund`)](#updating-blockheight-update_blockheight-option_will_fund)
     * [Message Retransmission: `channel_reestablish` message](#message-retransmission)
   * [Authors](#authors)
 
@@ -884,6 +885,10 @@ This message initiates the v2 channel establishment workflow.
    2. data:
        * [`u16`:`shutdown_len`]
        * [`shutdown_len*byte`:`shutdown_scriptpubkey`]
+   1. type: 3 (`request_funds`)
+   2. data:
+       * [`u64`:`requested_sats`]
+       * [`u32`:`blockheight`]
 
 
 Rationale and Requirements are the same as for [`open_channel`](#the-open_channel-message), with the following additions:
@@ -898,11 +903,19 @@ The sending node:
   - MUST set `funding_feerate_perkw` to the feerate for this transaction
   - MUST ensure `temporary_channel_id` is unique from any
     other channel ID with the same peer.
+  - if is accepting a `option_will_fund` offer from the peer's
+    `node_announcement`:
+    - MUST set `requested_sats` to the amount of sats they are requesting
+      the peer contribute to the channel in their `funding_satoshi`
+    - MUST set `blockheight` to the initial blockheight to be used
+      for the commitment transaction accepter's CSV encumbrance
 
 The receiving node:
   - MAY fail the negotiation if:
     - the `locktime` is unacceptable
     - the `funding_feerate_per_kw` is unacceptable
+    - if the `option_will_fund` tlv is present and:
+        - the `blockheight` is considered too far in the past or future
 
 #### Rationale
 `channel_id` for the `open_channel2` MUST be derived using a zero-d out
@@ -928,6 +941,11 @@ rounded down to the nearest whole satoshi or the `dust_limit_satoshis`,
 whichever is greater.
 
 Note that `push_msat` has been omitted.
+
+If the receiving node has advertised `option_will_fund`, opener
+may `request_funds` from the peer. They provide an amount requested
+and a `blockheight` which is the starting point for the funding lease
+of 4032 blocks.
 
 ### The `accept_channel2` Message
 
@@ -958,7 +976,18 @@ acceptance of the new channel.
    2. data:
        * [`u16`:`shutdown_len`]
        * [`shutdown_len*byte`:`shutdown_scriptpubkey`]
+   1. type: 2 (`will_fund`)
+   2. data:
+       * [`lease_rates`:`lease_rates`]
+       * [`signature`:`signature`]
 
+1. subtype: `lease_rates`
+2. data:
+    * [`u16`:`funding_fee_proportional_basis`]
+    * [`u32`:`funding_fee_base_sat`]
+    * [`u16`:`funding_weight`]
+    * [`u32`:`channel_fee_base_max_msat`]
+    * [`u16`:`channel_fee_proportional_basis_max`]
 
 Rationale and Requirements are the same as listed above,
 for [`accept_channel`](#the-accept_channel-message) with the following
@@ -968,6 +997,42 @@ additions.
 
 The accepting node:
     - MAY respond with a `funding_satoshis` value of zero.
+    - if the `option_will_fund` tlv was sent in `open_channel2`:
+        - if they decline to contribute funds or to be paid for their
+          contributions:
+            - SHOULD omit the `will_fund` tlv
+        - if they decide to accept the offer:
+            - MUST include a `will_fund` tlv
+            - MUST set `funding_satoshis` to a value greater than 0msat
+            - MAY provide a `funding_satoshis` of any amount.
+            - MUST set `funding_fee_base_sat` to the base fee
+              (in satoshi) it will charge for the `funding_satoshis`
+            - MUST set `funding_fee_proportional_basis` to the amount
+              (in thousandths of satoshi) it will charge per `funding_satoshi`
+            - MUST set `funding_weight` to the weight they
+              will contribute to this channel, to fund the request.
+            - MUST set `channel_fee_base_max_msat` to the base fee
+              (in millisatoshi) it will charge for any HTLC on this channel
+              during the funding period.
+            - MUST set `channel_fee_proportional_basis_max` to the amount
+              (in thousandths of a satoshi) it will charge per transferred
+              satoshi during the funding period.
+	    - MUST set `signature` to the ECDSA signature of
+	      SHA256("option_will_fund" || `funding_pubkey`|| `blockheight` ||
+	      `channel_fee_base_max_msat` || `channel_fee_proportional_basis_max`)
+              using the node_id key.
+
+The receiving node:
+  - SHOULD fail the negotiation if:
+    - they sent `request_funds` tlv and:
+      - the `funding_satoshi` is less than required
+      - the `funding_fee_proportional_basis` is too high
+      - the `funding_fee_base_sat` is too high
+      - the `funding_weight` is too high
+      - the `channel_fee_proportional_basis_max` is too high
+      - the `channel_fee_base_max_msat` is too high
+  - MUST fail the negotiation if they receive a `will_fund` tlv and:
+    - they DID NOT send a `request_funds` tlv
 
 #### Rationale
 
@@ -984,6 +1049,41 @@ whichever is greater.
 basepoint for the peer's revocation basepoint.  This allows the peer to
 return channel-assignable errors before the *accepter*'s revocation
 basepoint is known.
+
+If the opener requested a `option_will_fund` peer to contribute funds to
+this channel, via the inclusion of a `will_fund` tlv in their
+`open_channel2`, the peer may or may not choose to accept the offer.
+
+If the accepter node has run out of available funds, they should
+either fail the negotiation or reply with a `funding_satoshi` set
+to 0msat and no `will_fund` TLV, allowing the peer to fail the negotiation.
+
+`funding_weight` is the weight it will cost the node to
+contribute the offered funds to the channel. This is added to the
+total lease fee at a rate of `funding_weight` times the
+`funding_feerate_perkw` established in `open_channel2`.
+
+The total lease fee is added to the accepter node's output in the
+commitment transaction. It is equal to the `funding_fee_base_sat` +
+`accept_channel2`.`funding_satoshis` * `funding_fee_proportional_basis`
++ `funding_feerate_perkw` * `funding_weight` / 1000, rounded
+down to the nearest satoshi. See [Appendix A: The lease fee](#appendix-a-the-lease-fee).
+
+`signature` signs the accepter node's `funding_pubkey`, the opener's
+`locktime`, and the returned `channel_fee` parameters. This provides the opener
+with proof in the case the accepter does not maintain the stated
+`channel_fee` rates during the channel's funding lease.
+
+If the initiating node sent `request_funds` and the accepting node replied
+with `will_fund` this channel is considered 'leased'.  The lease ends
+4032 blocks after the `open_channel2` `blockheight`, i.e.
+`lease_end` is defined as the `open_channel2`.`blockheight` + 4032.
+
+During the lease, the initiator should consider limiting
+the rate funds are routed through the channel as this provides the opener
+the opportunity to move the funds elsewhere (and renders the
+lease fairly useless). A sensible policy here depends on the motivation of the
+opener in acquiring the leased funds.
 
 ### Funding Composition
 Funding composition for channel establishment v2 makes use of the
@@ -1862,6 +1962,49 @@ it's simplest to only allow it to set fee levels; however, as the same
 fee rate applies to HTLC transactions, the receiving node must also
 care about the reasonableness of the fee.
 
+### Updating Block Height: `update_blockheight` (`option_will_fund`)
+
+An `update_blockheight` message is sent by initiator node.
+Like any update, it's first committed to the receiver's commitment
+transaction and then (once acknowledged) committed to the sender's. Unlike
+an HTLC, `update_blockheight` is never closed but simply replaced.
+
+No `update_blockheight` changes may be pending when sent (i.e. must be
+fully committed on both sides).
+
+1. type: 137 (`update_blockheight`)
+2. data:
+   * [`channel_id`:`channel_id`]
+   * [`u32`:`blockheight`]
+
+#### Requirements
+
+The node _responsible_ for initiating the channel:
+  - MUST send `update_blockheight` to ensure the CSV lock mandated by
+    `option_will_fund` will expire at the end of the funding lease.
+  - MUST send `update_blockheight` when their local blockheight updates
+
+The node _not responsible_ for initiating the channel:
+  - MUST NOT send `update_blockheight`.
+
+A receiving node:
+  - if the `update_blockheight` is less than the last received `blockheight`:
+    - SHOULD fail the channel.
+  - if the sender is not the initiator:
+    - MUST fail the channel.
+  - if `blockheight` is more than 504 blocks behind the current blockheight:
+    - SHOULD fail the channel
+  - MUST apply the provided blockheight to their commitment transaction
+
+#### Rationale
+An up-to-date `blockheight` is required to ensure that the funding
+lease expires 4032 blocks after the channel is established. (??)
+
+The opener updates the blockheight, as they are motivated to keep
+the channel open. They do this by continuing to decrement the lock on
+the commitment output for their peer as the funding lease expiration
+approaches.
+
 ## Message Retransmission
 
 Because communication transports are unreliable, and may need to be
@@ -2094,6 +2237,49 @@ however), but the disclosure of previous secret still allows
 fall-behind detection.  An implementation can offer both, however, and
 fall back to the `option_data_loss_protect` behavior if
 `option_static_remotekey` is not negotiated.
+
+## Appendix A: The lease fee (`option_will_fund`)
+
+The lease fee is added to the accepter's balance in a channel, in addition
+to the `funding_satoshi` that they are contributing. The channel initiator
+must contribute enough funds to cover `open_channel2`.`funding_satoshis`,
+the lease fee, and their tx weight * `funding_feerate_perkw` / 1000.
+
+The lease fee is calculated as:
+
+	`funding_fee_base_sat` +
+	`accept_channel2`.`funding_satoshis` * `funding_fee_proportional_basis` / 1000 +
+	`funding_weight` * `funding_feerate_perkw` / 1000
+
+E.g.
+An node requests 100.0000sats at a feerate of 2500perkw. They
+are contributing 50.0000sats. Their weight contribution to the
+funding transaction will be 720.
+
+The accepter charges a base funding fee of 233sats with a
+proportional basis of 22. Their weight charge is 444. The lease fee is as
+follows:
+
+	233 + 100.0000 * 22 / 1000 + 444 * 2500 / 1000
+
+The total lease fee for this open is 3.3333sats.
+
+The outputs to the peers in the commitment transaction will be
+
+	to-initiator:  50.0000sats
+	to-accepter:  103.3333sats
+
+The miner fee for the initiator will be 720 * 2500 / 1000 or 1800sats.
+
+Minimum funds that the initiator must contribute to the channel open
+transaction:
+
+	open_channel2.funding_satoshis: 50.0000sats
+	lease fee:			 3.3333sats
+	miner fee:			   1800sats
+
+	total required contribution:	53.5133sats
+
 
 # Authors
 
