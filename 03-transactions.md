@@ -121,6 +121,10 @@ If a revoked commitment transaction is published, the other party can spend this
     <revocation_sig> 1
 
 ##### Leased channel (`option_will_fund`)
+
+If a `lease` applies to the channel, the `to_local` output of the `accepter`
+ensures the `leasor` funds are not spendable until the lease expires.
+
 In a leased channel, the `to_local` output that pays the `accepter` node
 is modified so that its CSV is equal to the greater of the
 `to_self_delay` or the `lease_end` - `blockheight`.
@@ -156,9 +160,8 @@ Otherwise, this output is a simple P2WPKH to `remotepubkey`.
 
 ##### Leased channel (`option_will_fund`)
 
-In a 'leased' channel, the `to_remote` output that pays the `accepter` node
-is modified so that it is equal to the greater of the
-1 or the `lease_end` - `blockheight`.
+If a `lease` applies to the channel, the `to_remote` output of the `initiator`
+ensures the `leasor` funds are not spendable until the lease expires.
 
     <remote_pubkey> OP_CHECKSIGVERIFY MAX(1, lease_end - blockheight) OP_CHECKSEQUENCEVERIFY
 

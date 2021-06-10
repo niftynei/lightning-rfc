@@ -382,7 +382,7 @@ optional padding within `addresses`, if they require certain alignment.
 
 If a node signals `option_will_fund`, they are signaling that they
 will provide funding to a node at the stated terms. They also commit
-to a feerate they will charge for transmitting funds over the channel
+to a maximum feerate they will charge for transmitting funds over the channel
 for the duration of the funding lease.
 
 
@@ -512,6 +512,13 @@ The origin node:
   - MUST set `fee_proportional_millionths` to the amount (in millionths of a
   satoshi) it will charge per transferred satoshi.
   - SHOULD NOT create redundant `channel_update`s
+  - if they are the `leasor` for a currently active lease on this channel
+    (`option_will_fund`):
+    - MUST NOT set `fee_base_msat` greater than `channel_fee_max_base_msat`
+      (as committed to in the `accept_channel2`.`will_fund`.`signature`)
+    - MUST NOT set `fee_proportional_millionths` greater than
+      `channel_fee_max_proportional_thousands` * 1000
+      (as committed to in the `accept_channel2`.`will_fund`.`signature`)
 
 The receiving node:
   - if the `short_channel_id` does NOT match a previous `channel_announcement`,
