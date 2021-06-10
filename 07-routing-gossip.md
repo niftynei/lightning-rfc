@@ -268,11 +268,7 @@ nodes not associated with an already known channel are ignored.
 2. types:
    1. type: 1 (`option_will_fund`)
    2. data:
-       * [`u16`:`funding_fee_proportional_basis`]
-       * [`u32`:`funding_fee_base_sat`]
-       * [`u16`:`funding_weight_max`]
-       * [`u16`:`channel_fee_proportional_basis_max`]
-       * [`tu32`:`channel_fee_base_max_msat`]
+       * [`lease_rates`:`lease_rates`]
 
 
 `timestamp` allows for the ordering of messages, in the case of multiple

@@ -983,11 +983,11 @@ acceptance of the new channel.
 
 1. subtype: `lease_rates`
 2. data:
-    * [`u16`:`funding_fee_proportional_basis`]
-    * [`u32`:`funding_fee_base_sat`]
-    * [`u16`:`funding_weight`]
-    * [`u32`:`channel_fee_base_max_msat`]
-    * [`u16`:`channel_fee_proportional_basis_max`]
+       * [`u16`:`funding_fee_proportional_basis`]
+       * [`u32`:`funding_fee_base_sat`]
+       * [`u16`:`funding_weight_max`]
+       * [`u16`:`channel_fee_proportional_basis_max`]
+       * [`tu32`:`channel_fee_base_max_msat`]
 
 Rationale and Requirements are the same as listed above,
 for [`accept_channel`](#the-accept_channel-message) with the following
